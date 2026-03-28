@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WordBook — Словарь ученика</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1410;
+    --paper: #faf8f3;
+    --cream: #f2ede3;
+    --accent: #c84b2f;
+    --gold: #d4943a;
+    --muted: #8a7d6b;
+    --border: #ddd5c4;
+    --success: #3a7d5a;
+    --shadow: 0 2px 16px rgba(26,20,16,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.02em;
+  }
+
+  .logo span { color: var(--gold); }
+
+  .header-nav {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .tab-btn.active, .tab-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--paper);
+  }
+
+  .tab-btn.active {
+    background: var(--accent);
+    color: white;
+  }
+
+  /* ── Views ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── Student View ── */
+  .student-hero {
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 2rem 1.5rem;
+  }
+
+  .student-name-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .student-name-row label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .name-select {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    background: white;
+    color: var(--ink);
+    cursor: pointer;
+    min-width: 180px;
+  }
+
+  .new-name-input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    background: white;
+    color: var(--ink);
+    width: 160px;
+  }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.45rem 1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover { background: #a83a20; }
+
+  .btn-ghost {
+    background: white;
+    color: var(--ink);
+    border: 1.5px solid var(--border);
+  }
+
+  .btn-ghost:hover { border-color: var(--muted); }
+
+  /* Add word area */
+  .add-word-area {
+    padding: 1.5rem 2rem;
+    background: white;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .add-word-form {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .word-input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.1rem;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    width: 240px;
+    background: var(--paper);
+    transition: border-color 0.2s;
+    color: var(--ink);
+  }
+
+  .word-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .translation-preview {
+    font-size: 0.9rem;
+    color: var(--success);
+    font-style: italic;
+    min-width: 140px;
+  }
+
+  .translation-preview.loading { color: var(--muted); font-style: normal; }
+
+  /* Word list */
+  .words-container {
+    padding: 1.5rem 2rem;
+    max-width: 900px;
+  }
+
+  .words-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .words-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--ink);
+  }
+
+  .words-count {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .word-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .word-table th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .word-table td {
+    padding: 0.7rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.95rem;
+    vertical-align: middle;
+  }
+
+  .word-table tr:hover td { background: var(--cream); }
+
+  .word-en {
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .word-ru {
+    color: var(--muted);
+  }
+
+  .word-context {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-style: italic;
+    max-width: 280px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .word-date {
+    font-size: 0.78rem;
+    color: var(--border);
+  }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--border);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+
+  .delete-btn:hover { color: var(--accent); background: #fce8e4; }
+
+  /* ── Teacher View ── */
+  .teacher-layout {
+    display: flex;
+    min-height: calc(100vh - 56px);
+  }
+
+  .teacher-sidebar {
+    width: 220px;
+    background: var(--cream);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem;
+    flex-shrink: 0;
+  }
+
+  .sidebar-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    padding: 0 0.5rem;
+  }
+
+  .student-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+  }
+
+  .student-item:hover { background: var(--border); }
+  .student-item.active { background: var(--ink); color: white; }
+
+  .student-item-name { font-size: 0.9rem; font-weight: 500; }
+
+  .student-item-count {
+    font-size: 0.75rem;
+    background: rgba(0,0,0,0.12);
+    padding: 0.1rem 0.45rem;
+    border-radius: 10px;
+  }
+
+  .student-item.active .student-item-count { background: rgba(255,255,255,0.2); }
+
+  .teacher-main {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+
+  .teacher-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .teacher-student-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+  }
+
+  .search-box {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.9rem;
+    background: white;
+    color: var(--ink);
+    width: 200px;
+    transition: border-color 0.2s;
+  }
+
+  .search-box:focus { outline: none; border-color: var(--accent); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .empty-state p { font-size: 0.95rem; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--ink);
+    color: white;
+    padding: 0.65rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-left: 3px solid var(--success); }
+  .toast.error { border-left: 3px solid var(--accent); }
+
+  /* Tag */
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    color: var(--muted);
+    margin-left: 0.4rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .word-context, .word-date { display: none; }
+    .teacher-sidebar { width: 160px; }
+    .teacher-main { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Word<span>Book</span></div>
+  <nav class="header-nav">
+    <button class="tab-btn active" onclick="switchView('student')">Словарь</button>
+    <button class="tab-btn" onclick="switchView('teacher')">Учитель</button>
+  </nav>
+</header>
+
+<!-- ═══════════ STUDENT VIEW ═══════════ -->
+<div id="view-student" class="view active">
+
+  <div class="student-hero">
+    <div class="student-name-row">
+      <label>Я — </label>
+      <select class="name-select" id="student-select" onchange="onStudentChange()">
+        <option value="">— выбери имя —</option>
+      </select>
+      <span style="color:var(--muted); font-size:0.85rem">или</span>
+      <input class="new-name-input" id="new-name" placeholder="новое имя…" />
+      <button class="btn btn-primary" onclick="addNewStudent()">Добавить</button>
+    </div>
+  </div>
+
+  <div class="add-word-area">
+    <div class="add-word-form">
+      <input class="word-input" id="word-input" placeholder="Введи слово по-английски…"
+             oninput="onWordInput()" onkeydown="if(event.key==='Enter') saveWord()" />
+      <div class="translation-preview" id="translation-preview">перевод появится здесь</div>
+      <button class="btn btn-primary" onclick="saveWord()">＋ Добавить в словарь</button>
+      <button class="btn btn-ghost" onclick="clearWord()">Очистить</button>
+    </div>
+    <div style="margin-top:0.6rem; font-size:0.78rem; color:var(--muted);">
+      💡 Также можно выделить слово на любой странице → правая кнопка → «Добавить в WordBook» (нужно расширение Chrome)
+    </div>
+  </div>
+
+  <div class="words-container">
+    <div class="words-header">
+      <span class="words-title">Мои слова</span>
+      <span class="words-count" id="student-count">0 слов</span>
+    </div>
+    <table class="word-table" id="student-table">
+      <thead>
+        <tr>
+          <th>Английский</th>
+          <th>Перевод</th>
+          <th>Контекст</th>
+          <th>Дата</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="student-words-body"></tbody>
+    </table>
+    <div class="empty-state" id="student-empty">
+      <div class="icon">📖</div>
+      <p>Выбери своё имя и начни добавлять слова!</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TEACHER VIEW ═══════════ -->
+<div id="view-teacher" class="view">
+  <div class="teacher-layout">
+    <aside class="teacher-sidebar">
+      <div class="sidebar-title">Ученики</div>
+      <div id="teacher-student-list"></div>
+    </aside>
+    <main class="teacher-main">
+      <div class="teacher-header">
+        <div class="teacher-student-name" id="teacher-student-name">Выбери ученика</div>
+        <input class="search-box" placeholder="Поиск слова…" oninput="filterTeacherWords(this.value)" id="teacher-search" />
+      </div>
+      <table class="word-table" id="teacher-table">
+        <thead>
+          <tr>
+            <th>Английский</th>
+            <th>Перевод</th>
+            <th>Контекст</th>
+            <th>Дата</th>
+          </tr>
+        </thead>
+        <tbody id="teacher-words-body"></tbody>
+      </table>
+      <div class="empty-state" id="teacher-empty">
+        <div class="icon">👈</div>
+        <p>Выбери ученика слева, чтобы увидеть его слова</p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════
+//  DATA LAYER (localStorage)
+// ══════════════════════════════════
+const DB_KEY = 'wordbook_v1';
+
+function loadDB() {
+  try { return JSON.parse(localStorage.getItem(DB_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveDB(db) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+
+function getStudents() {
+  const db = loadDB();
+  return Object.keys(db);
+}
+
+function getWords(student) {
+  const db = loadDB();
+  return db[student] || [];
+}
+
+function addWord(student, wordObj) {
+  const db = loadDB();
+  if (!db[student]) db[student] = [];
+  db[student].unshift(wordObj);
+  saveDB(db);
+}
+
+function deleteWord(student, id) {
+  const db = loadDB();
+  if (!db[student]) return;
+  db[student] = db[student].filter(w => w.id !== id);
+  saveDB(db);
+}
+
+function ensureStudent(name) {
+  const db = loadDB();
+  if (!db[name]) { db[name] = []; saveDB(db); }
+}
+
+// ══════════════════════════════════
+//  TRANSLATION
+// ══════════════════════════════════
+let translateTimer = null;
+let lastTranslation = '';
+
+async function translate(word) {
+  if (!word.trim()) return '';
+  try {
+    const r = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|ru`
+    );
+    const data = await r.json();
+    if (data.responseStatus === 200) return data.responseData.translatedText;
+    return '';
+  } catch { return ''; }
+}
+
+function onWordInput() {
+  clearTimeout(translateTimer);
+  const val = document.getElementById('word-input').value.trim();
+  const preview = document.getElementById('translation-preview');
+  if (!val) { preview.textContent = 'перевод появится здесь'; preview.className = 'translation-preview'; return; }
+  preview.textContent = '…'; preview.className = 'translation-preview loading';
+  translateTimer = setTimeout(async () => {
+    const t = await translate(val);
+    lastTranslation = t;
+    preview.textContent = t || '(не найдено)';
+    preview.className = 'translation-preview';
+  }, 600);
+}
+
+// ══════════════════════════════════
+//  STUDENT VIEW
+// ══════════════════════════════════
+let currentStudent = '';
+
+function onStudentChange() {
+  currentStudent = document.getElementById('student-select').value;
+  renderStudentWords();
+}
+
+function addNewStudent() {
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) return toast('Введи имя', 'error');
+  ensureStudent(name);
+  currentStudent = name;
+  document.getElementById('new-name').value = '';
+  refreshStudentSelect();
+  document.getElementById('student-select').value = name;
+  renderStudentWords();
+  toast(`Привет, ${name}! 👋`, 'success');
+}
+
+function refreshStudentSelect() {
+  const sel = document.getElementById('student-select');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— выбери имя —</option>';
+  getStudents().forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    sel.appendChild(o);
+  });
+  if (prev) sel.value = prev;
+}
+
+function renderStudentWords() {
+  const words = currentStudent ? getWords(currentStudent) : [];
+  const tbody = document.getElementById('student-words-body');
+  const empty = document.getElementById('student-empty');
+  const count = document.getElementById('student-count');
+
+  count.textContent = words.length + ' ' + plural(words.length, 'слово', 'слова', 'слов');
+
+  if (!words.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = words.map(w => `
+    <tr>
+      <td><span class="word-en">${esc(w.word)}</span></td>
+      <td><span class="word-ru">${esc(w.translation || '—')}</span></td>
+      <td><span class="word-context" title="${esc(w.context || '')}">${esc(w.context || '')}</span></td>
+      <td><span class="word-date">${formatDate(w.date)}</span></td>
+      <td><button class="delete-btn" onclick="deleteStudentWord('${w.id}')">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+async function saveWord() {
+  if (!currentStudent) return toast('Сначала выбери или введи своё имя!', 'error');
+  const input = document.getElementById('word-input');
+  const word = input.value.trim();
+  if (!word) return toast('Введи слово', 'error');
+
+  let translation = lastTranslation;
+  if (!translation) {
+    document.getElementById('translation-preview').textContent = '…';
+    translation = await translate(word);
+    lastTranslation = translation;
+  }
+
+  const wordObj = {
+    id: Date.now().toString(),
+    word,
+    translation,
+    context: '',
+    date: new Date().toISOString(),
+    source: 'manual'
+  };
+
+  addWord(currentStudent, wordObj);
+  clearWord();
+  renderStudentWords();
+  toast(`«${word}» добавлено! 📚`, 'success');
+}
+
+function clearWord() {
+  document.getElementById('word-input').value = '';
+  document.getElementById('translation-preview').textContent = 'перевод появится здесь';
+  document.getElementById('translation-preview').className = 'translation-preview';
+  lastTranslation = '';
+}
+
+function deleteStudentWord(id) {
+  if (!currentStudent) return;
+  deleteWord(currentStudent, id);
+  renderStudentWords();
+  toast('Слово удалено', '');
+}
+
+// ══════════════════════════════════
+//  TEACHER VIEW
+// ══════════════════════════════════
+let teacherSelectedStudent = '';
+let teacherFilter = '';
+
+function renderTeacherSidebar() {
+  const students = getStudents();
+  const list = document.getElementById('teacher-student-list');
+  if (!students.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:0.5rem">Пока нет учеников</div>';
+    return;
+  }
+  list.innerHTML = students.map(s => {
+    const count = getWords(s).length;
+    const active = s === teacherSelectedStudent ? 'active' : '';
+    return `<div class="student-item ${active}" onclick="selectTeacherStudent('${esc(s)}')">
+      <span class="student-item-name">${esc(s)}</span>
+      <span class="student-item-count">${count}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectTeacherStudent(name) {
+  teacherSelectedStudent = name;
+  document.getElementById('teacher-student-name').textContent = name;
+  document.getElementById('teacher-search').value = '';
+  teacherFilter = '';
+  renderTeacherSidebar();
+  renderTeacherWords();
+}
+
+function filterTeacherWords(val) {
+  teacherFilter = val.toLowerCase();
+  renderTeacherWords();
+}
+
+function renderTeacherWords() {
+  const empty = document.getElementById('teacher-empty');
+  const tbody = document.getElementById('teacher-words-body');
+
+  if (!teacherSelectedStudent) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  let words = getWords(teacherSelectedStudent);
+  if (teacherFilter) {
+    words = words.filter(w =>
+      w.word.toLowerCase().includes(teacherFilter) ||
+      (w.translation || '').toLowerCase().includes(teacherFilter)
+    );
+  }
+
+  if (!words.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    empty.querySelector('.icon').textContent = teacherFilter ? '🔍' : '📖';
+    empty.querySelector('p').textContent = teacherFilter ? 'Ничего не найдено' : 'Ученик ещё не добавил слова';
+    return;
+  }
+
+  empty.style.display = 'none';
+  tbody.innerHTML = words.map(w => `
+    <tr>
+      <td><span class="word-en">${esc(w.word)}</span>${w.source === 'extension' ? '<span class="tag">расш.</span>' : ''}</td>
+      <td><span class="word-ru">${esc(w.translation || '—')}</span></td>
+      <td><span class="word-context" title="${esc(w.context || '')}">${esc(w.context || '')}</span></td>
+      <td><span class="word-date">${formatDate(w.date)}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ══════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  event.target.classList.add('active');
+  if (v === 'teacher') { renderTeacherSidebar(); renderTeacherWords(); }
+}
+
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || '');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('ru-RU', { day:'2-digit', month:'short' });
+}
+
+function plural(n, one, few, many) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} ${one}`;
+  if ([2,3,4].includes(mod10) && ![12,13,14].includes(mod100)) return `${n} ${few}`;
+  return `${n} ${many}`;
+}
+
+// ══════════════════════════════════
+//  INIT + Extension bridge
+// ══════════════════════════════════
+// Listen for words coming from the Chrome extension
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'WORDBOOK_ADD') {
+    const { word, translation, context } = e.data;
+    if (!currentStudent) {
+      toast('Выбери имя, чтобы сохранить слово!', 'error');
+      return;
+    }
+    addWord(currentStudent, {
+      id: Date.now().toString(),
+      word, translation, context: context || '',
+      date: new Date().toISOString(),
+      source: 'extension'
+    });
+    renderStudentWords();
+    toast(`«${word}» добавлено! 📚`, 'success');
+  }
+});
+
+// Also expose for extension via custom event
+window.addEventListener('wordbook:add', e => {
+  const { word, translation, context } = e.detail;
+  if (!currentStudent) {
+    toast('Выбери имя в WordBook!', 'error');
+    return;
+  }
+  addWord(currentStudent, {
+    id: Date.now().toString(),
+    word, translation, context: context || '',
+    date: new Date().toISOString(),
+    source: 'extension'
+  });
+  renderStudentWords();
+  toast(`«${word}» добавлено! 📚`, 'success');
+});
+
+refreshStudentSelect();
+renderStudentWords();
+</script>
+</body>
+</html>
